@@ -28,43 +28,56 @@ export default function Hero() {
   return (
     <section className="relative isolate overflow-hidden px-6 pb-20 pt-28 sm:px-8 sm:pb-24 sm:pt-32 lg:px-12">
       <div className="absolute inset-0 -z-10 opacity-80">
-        <div className="absolute -left-48 top-10 h-80 w-80 rounded-full bg-gradient-to-br from-pink-500/60 via-fuchsia-500/40 to-purple-500/30 blur-3xl sm:-left-36 sm:top-0 sm:h-[28rem] sm:w-[28rem]" />
-        <div className="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-gradient-to-br from-purple-500/40 via-blue-500/30 to-emerald-400/30 blur-3xl sm:h-[22rem] sm:w-[22rem]" />
+        <div className="absolute -left-48 top-10 h-80 w-80 rounded-full bg-gradient-to-br from-pink-500/60 via-fuchsia-500/40 to-purple-500/30 blur-3xl animate-float sm:-left-36 sm:top-0 sm:h-[28rem] sm:w-[28rem]" />
+        <div className="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-gradient-to-br from-purple-500/40 via-blue-500/30 to-emerald-400/30 blur-3xl animate-float sm:h-[22rem] sm:w-[22rem]" style={{ animationDelay: "1s" }} />
         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-neutral-950 via-neutral-950/80 to-transparent" />
       </div>
 
       <div className="mx-auto grid max-w-6xl items-center gap-16 lg:grid-cols-[minmax(0,1fr),minmax(0,0.9fr)]">
         <div className="flex flex-col gap-8 text-balance">
-          <div className="inline-flex items-center gap-3 self-start rounded-full border border-white/20 bg-white/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-white/80 backdrop-blur-md">
-            <span className="h-1.5 w-1.5 rounded-full bg-lime-400" />
+          <div className="inline-flex items-center gap-3 self-start rounded-full border border-white/20 bg-white/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-white/80 backdrop-blur-md animate-fade-in">
+            <span className="h-1.5 w-1.5 rounded-full bg-lime-400 animate-pulse" />
             JAM Events
           </div>
           <div className="flex flex-col gap-6">
-            <h1 className="font-semibold text-4xl leading-tight text-white sm:text-5xl lg:text-6xl">
+            <h1 className="font-semibold text-4xl leading-tight text-white sm:text-5xl lg:text-6xl animate-fade-in-up">
               Create unforgettable moments with{" "}
               <span className="bg-gradient-to-br from-pink-400 via-fuchsia-300 to-purple-300 bg-clip-text text-transparent">
                 JAM Events
               </span>
             </h1>
-            <p className="text-lg text-neutral-200 sm:text-xl">
+            <p className="text-lg text-neutral-200 sm:text-xl animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
               We craft immersive corporate and social experiences that delight
               guests, elevate brands, and build lasting community. Join our
               circle to unlock curated events, insider invitations, and bespoke
               planning support.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4 animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
             <Link
-              href="#signup"
-              className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-pink-500/30 transition hover:scale-[1.02] hover:shadow-pink-500/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-400"
+              href="/contact"
+              className="group inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-pink-500/30 transition-all duration-300 hover:scale-105 hover:shadow-pink-500/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-400"
             >
-              Join the community
+              Start Your Event
+              <svg
+                className="h-4 w-4 transition-transform group-hover:translate-x-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 8l4 4m0 0l-4 4m4-4H3"
+                />
+              </svg>
             </Link>
             <Link
-              href="#highlights"
-              className="inline-flex items-center justify-center rounded-full border border-white/20 px-6 py-3 text-sm font-semibold text-white/80 transition hover:border-white/40 hover:text-white"
+              href="/services"
+              className="inline-flex items-center justify-center rounded-full border border-white/20 px-6 py-3 text-sm font-semibold text-white/80 backdrop-blur-sm transition-all duration-300 hover:border-white/40 hover:bg-white/5 hover:text-white"
             >
-              Explore our services
+              Explore Services
             </Link>
           </div>
 
