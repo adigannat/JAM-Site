@@ -1,192 +1,208 @@
-# JAM Events Experience Platform
+# JAM Event Sticker Hunt
 
-A multi-page marketing experience for JAM Events built with Next.js 15 and Appwrite. The site blends immersive storytelling with data-driven sections—live event listings, testimonials, newsletter opt-ins, and inquiries all flow into Appwrite so the team can act quickly.
-
----
-
-## ✨ Feature Highlights
-- **Global navigation** with scroll-aware styling, mobile menu, and quick CTAs.
-- **Home experience** that layers hero storytelling, service highlights, live events, testimonials, partner carousel, and newsletter signup.
-- **Dedicated routes** for Events, Services, About, and Contact—each combining rich content blocks with data pulled from Appwrite.
-- **Appwrite-backed interactions**:
-  - Lead capture (`SignupForm`) with duplicate protection.
-  - Newsletter subscriptions (`Newsletter`) with inline status messaging.
-  - Inquiry form (`ContactForm`) that records detailed briefs for the sales team.
-  - Dynamic event gallery and featured testimonials that hydrate from Appwrite collections and storage buckets.
-- **Modern visual language**: Tailwind CSS v4 utilities, animated gradients, Framer Motion transitions, and accessible focus states.
+Pixel-perfect event experience that authenticates guests, scans QR stickers, and claims them securely through Appwrite. Built from the ground up for reliability, minimal dependencies, and tight security.
 
 ---
 
-## 🛠 Tech Stack
-- **Framework**: Next.js 15 (App Router) + React 19
-- **Language**: TypeScript (strict mode)
-- **Styling**: Tailwind CSS v4 with custom utilities in `src/styles/globals.css`
-- **Animation**: Framer Motion (page/section transitions)
-- **Forms & Validation**: `react-hook-form` + `zod`
-- **Platform SDK**: Appwrite JavaScript SDK (`appwrite` 18.x) for databases and storage
-- **Linting/Formatting**: ESLint (`next/core-web-vitals`, `next/typescript`) and Prettier with the Tailwind plugin
+## Features
+
+- **Authentication:** Email/password via Appwrite with guarded routes.
+- **Scanner:** Continuous QR scanning with graceful fallbacks and manual entry.
+- **Claims:** Single-use stickers claimed by a hardened Appwrite function (no direct client writes).
+- **Profile:** Real-time view of collected stickers with rarity breakdown.
+- **Tooling:** Appwrite provisioning script, seeding utility, and ready-to-deploy function.
 
 ---
 
-## 📁 Directory Overview
+## Tech Stack
+
+| Layer          | Tools                                                                 |
+|----------------|-----------------------------------------------------------------------|
+| Frontend       | React 18 + Vite (TypeScript), TailwindCSS, React Router, @zxing/browser |
+| Backend        | Appwrite (Auth, Database, Functions, Storage-ready)                   |
+| Serverless     | Node 20 function (TypeScript → JS)                                    |
+| Tooling        | ESLint, Prettier, custom scripts (`setup-appwrite`, `seed-stickers`)  |
+
+---
+
+## Repository Layout
+
 ```
 .
-├── public/                       # Static assets (favicons, og image stubs, etc.)
-├── src/
-│   ├── app/
-│   │   ├── layout.tsx            # Global layout, head metadata, navigation wrapper
-│   │   ├── page.tsx              # Home experience
-│   │   ├── about/page.tsx        # Story, values, team, shared testimonials & partners
-│   │   ├── events/page.tsx       # Upcoming & past events + lead capture
-│   │   ├── services/page.tsx     # Service catalogue and process highlights
-│   │   └── contact/page.tsx      # Full-screen inquiry form and contact details
-│   ├── components/               # Reusable sections & UI primitives
-│   │   ├── ContactForm.tsx       # Appwrite-backed inquiry form
-│   │   ├── EventsGallery.tsx     # Upcoming events (Appwrite + Storage imagery)
-│   │   ├── Newsletter.tsx        # Newsletter opt-in with duplicate handling
-│   │   ├── Navigation.tsx        # Sticky header with responsive menu
-│   │   ├── Partners.tsx          # Placeholder partner grid
-│   │   ├── PastEvents.tsx        # Archive blocks (static copy, extendable)
-│   │   ├── Services.tsx / Testimonials.tsx / Team.tsx / etc.
-│   │   └── SignupForm.tsx        # Lead capture for curated experiences
-│   ├── lib/
-│   │   └── appwrite.ts           # Client config, typed helpers, data fetchers
-│   └── styles/
-│       └── globals.css           # Tailwind import + shared gradient/focus utilities
-├── docs/
-│   └── appwrite-setup.md         # Database, collection, and bucket configuration
-├── agents.md                     # Orientation for LLM and human contributors
-├── .env / .env.example           # Public Appwrite identifiers
-├── package.json                  # Scripts & dependencies
-├── tsconfig.json                 # TypeScript compiler settings
-├── .eslintrc.json                # ESLint configuration
-├── postcss.config.mjs            # Tailwind/PostCSS pipeline
-└── prettier.config.js            # Prettier (Tailwind aware)
+├── app/                     # Vite application
+│   ├── index.html
+│   ├── src/
+│   │   ├── components/      # UI, layout, auth, scan helpers
+│   │   ├── lib/             # Appwrite client, env, claim helpers
+│   │   ├── pages/           # Route screens (/ , /scan, /me, 404)
+│   │   └── routes/          # Router + layout shell
+│   └── vite.config.ts
+├── functions/claimSticker/  # Serverless function source
+│   ├── src/index.ts
+│   ├── package.json
+│   └── tsconfig.json
+├── scripts/                 # Ops tooling
+│   ├── setup-appwrite.mjs   # Idempotent infrastructure provisioning
+│   └── seed-stickers.mjs    # Sticker generator with optional signatures
+├── docs/appwrite-comprehensive-setup.md
+├── .env.example
+└── README.md
 ```
 
-See `agents.md` for a deeper architectural walkthrough tailored to contributors.
-
 ---
 
-## ⚙️ Prerequisites
-1. **Node.js** 20.x (LTS recommended) and npm.
-2. An **Appwrite** instance/project with permission to create databases, collections, and storage buckets (cloud or self-hosted).
+## Getting Started
 
----
+### 1. Install dependencies
 
-## 🚀 Getting Started
 ```bash
-# install dependencies
 npm install
-
-# local development
-npm run dev    # http://localhost:3000
-
-# linting
-npm run lint
-
-# production build & preview
-npm run build
-npm run start
 ```
 
----
+### 2. Configure environment
 
-## 🔐 Environment Variables
-Copy `.env.example` to `.env` and populate the IDs from your Appwrite project:
+Copy `.env.example` → `.env` and fill in values from Appwrite.
 
-| Variable | Purpose |
-| --- | --- |
-| `NEXT_PUBLIC_APPWRITE_ENDPOINT` | Appwrite HTTP endpoint (e.g. https://cloud.appwrite.io/v1) |
-| `NEXT_PUBLIC_APPWRITE_PROJECT_ID` | Project ID that the public client connects to |
-| `NEXT_PUBLIC_APPWRITE_PROJECT_NAME` | Used for display in UI |
-| `NEXT_PUBLIC_APPWRITE_DATABASE_ID` | Primary database containing all collections |
-| `NEXT_PUBLIC_APPWRITE_COLLECTION_ID` | Lead capture (signup form) collection |
-| `NEXT_PUBLIC_APPWRITE_EVENTS_COLLECTION_ID` | Upcoming events records |
-| `NEXT_PUBLIC_APPWRITE_TESTIMONIALS_COLLECTION_ID` | Client testimonials |
-| `NEXT_PUBLIC_APPWRITE_NEWSLETTER_COLLECTION_ID` | Newsletter subscriptions |
-| `NEXT_PUBLIC_APPWRITE_INQUIRIES_COLLECTION_ID` | Detailed contact/inquiry submissions |
-| `NEXT_PUBLIC_APPWRITE_EVENTS_BUCKET_ID` | Storage bucket for event imagery |
-| `NEXT_PUBLIC_APPWRITE_TEAM_BUCKET_ID` | Storage bucket for team/testimonial avatars |
-| `NEXT_PUBLIC_APPWRITE_CLIENTS_BUCKET_ID` | Storage bucket for partner/client logos |
+Key variables:
 
-All values are public-facing. Do **not** embed Appwrite API keys in the client—use server actions or Appwrite Functions when privileged operations are required.
+| Variable                                | Purpose                                            |
+|-----------------------------------------|----------------------------------------------------|
+| `VITE_APPWRITE_*`                       | Used by the Vite frontend.                         |
+| `APPWRITE_ENDPOINT`, `APPWRITE_API_KEY` | Used by scripts + serverless function.             |
+| `VITE_APPWRITE_CLAIM_FUNCTION_ID`       | Appwrite function ID returned after deployment.    |
+| `SIGNING_SECRET`                        | Optional shared secret for QR signatures.          |
 
----
+> Keep `.env` out of version control. Scripts and function rely on the same values.
 
-## 🗄 Appwrite Resources
-Follow `docs/appwrite-setup.md` for attribute-level detail. At a glance:
+### 3. Run the dev server
 
-- **Collections**
-  - `jam_signups`: full name, email, phone, interests, notes, marketing consent.
-  - `events`: event metadata (title, description, date, location, status, imagery, highlights, ticketing).
-  - `testimonials`: client quotes, rating, optional avatar reference.
-  - `newsletter`: active subscriptions and timestamps.
-  - `inquiries`: inquiry payload from the contact page, including guest count and budget.
-- **Indexes**
-  - Email uniqueness on `jam_signups` and `newsletter`.
-  - Status/date ordering on event collections.
-- **Buckets**
-  - `events_gallery`, `team_photos`, `client_logos` for hero images, avatars, and logo walls.
+```bash
+npm run dev
+```
 
-Ensure unauthenticated users have `create` permissions where client-side writes occur (signups, newsletter, inquiries). Lock down `read/update/delete` to team members or API keys.
+The site runs at `http://localhost:5173`.
 
 ---
 
-## 🧱 Architecture At A Glance
-- **`src/app/layout.tsx`**  
-  Injects Inter/Poppins fonts, sets comprehensive SEO metadata (Open Graph, Twitter, robots), renders the sticky `Navigation`, and offsets page content.
+## Appwrite Provisioning
 
-- **`src/components/Navigation.tsx`**  
-  Client component that reacts to scroll, toggles a mobile drawer, and exposes quick “Get Started” CTA.
+All schema and permission details live in `docs/appwrite-comprehensive-setup.md`.
 
-- **Home (`src/app/page.tsx`)**  
-  Orchestrates the marquee sections: `Hero`, `Highlights`, `EventsGallery`, `Testimonials`, `Partners`, `Newsletter`, `Footer`. Animated gradient layers are shared here.
+Execute the setup script once credentials are available:
 
-- **Events page**  
-  Reuses `EventsGallery` (Appwrite fetch), `PastEvents` (static showcase), and `SignupForm` so visitors can register for curated experiences.
+```bash
+APPWRITE_ENDPOINT=... \
+APPWRITE_PROJECT_ID=... \
+APPWRITE_API_KEY=... \
+npm run setup:appwrite
+```
 
-- **Services page**  
-  Highlights service categories, production workflow, and reuses testimonials/partners to reinforce credibility.
-
-- **About page**  
-  Introduces the team via `Team` component (ready for Appwrite avatars), restates values, and loops in shared testimonials/partners/newsletter.
-
-- **Contact page**  
-  Anchored by `ContactForm`, which posts to `submitInquiry` and provides success/error messaging. Additional cards expose direct contact details, office information, and FAQ items.
-
-- **`src/lib/appwrite.ts`**  
-  Centralized Appwrite client with helpers for signups, events, testimonials, newsletter subscriptions, inquiries, and storage URL building. Typed payloads keep data flows predictable and surface environment misconfiguration early.
+The script will create (or update) `event_db`, `stickers`, and `claims` with the right attributes and indexes. Safe to re-run.
 
 ---
 
-## 🎨 Design & UX Notes
-- Tailwind utility-first styling ensures consistency; `globals.css` houses gradient helpers, focus rings, and default typography.
-- Animated gradients (`animate-pulse`) and Framer Motion transitions set the tone without sacrificing performance.
-- Components include accessible keyboard/focus handling and descriptive messaging for validation states.
-- Loading skeletons ship with data-driven sections (events/testimonials) to reduce layout shift.
+## Serverless Function Deployment
+
+1. Build the TypeScript function:
+
+   ```bash
+   npm run functions:build
+   ```
+
+2. Deploy with the Appwrite CLI (example):
+
+   ```bash
+   appwrite functions createDeployment \
+     --functionId=claimSticker \
+     --entrypoint=dist/index.js \
+     --code=functions/claimSticker \
+     --activate=true
+   ```
+
+3. Configure function environment (same keys used locally) and ensure:
+   - **Runtime:** Node.js 20+
+   - **Execute Permissions:** `role:users`
+   - **HTTP Enabled:** yes
+
+4. Copy the function ID and set `VITE_APPWRITE_CLAIM_FUNCTION_ID` in `.env`.
 
 ---
 
-## 🧭 Roadmap Ideas
-- Surface Appwrite-stored content on the Services/About pages (team bios, partner logos) once assets are uploaded.
-- Add admin tooling or protected routes to manage events and inquiries.
-- Integrate analytics + conversion tracking.
-- Introduce automated test coverage (Jest/RTL for logic, Playwright for flows).
-- Build a design system folder for shared UI primitives (buttons, cards, badges) as the component catalog grows.
+## Generating Stickers & Signatures
+
+Create single-use stickers directly from the CLI:
+
+```bash
+# Create 50 stickers with optional signatures
+SIGNING_SECRET=super-secret \
+APPWRITE_ENDPOINT=... \
+APPWRITE_PROJECT_ID=... \
+APPWRITE_API_KEY=... \
+npm run seed:stickers -- 50
+```
+
+Output:
+- Inserts documents into the `stickers` collection.
+- Generates `scripts/output/stickers.csv` listing `code`, `sig`, and `eventId`.
+
+Use the CSV to produce QR labels encoded as:
+
+```
+https://your-domain/scan?code=<CODE>&sig=<SIG>
+```
+
+The front-end also accepts raw codes and manual entry.
 
 ---
 
-## 🤝 Contributing
-- Read `agents.md` for contributor workflow expectations (env hygiene, schema sync, testing, documentation).
-- Run `npm run lint` before committing; optionally `npx prettier --write .`.
-- Open issues/PRs describing schema changes so Appwrite configuration stays aligned.
+## QR Scanner UX
+
+- Uses `@zxing/browser` for continuous scanning.
+- Auto-stops after a successful claim and shows a confetti celebration.
+- Manual code + signature input is provided as a fallback.
+- Error handling:
+  - `404` → invalid/inactive.
+  - `409` → already claimed.
+  - Any other failure → retry guidance.
 
 ---
 
-## 📄 License
-MIT (see `LICENSE`)
+## Testing & Quality Gates
+
+| Command                 | Description                                                 |
+|-------------------------|-------------------------------------------------------------|
+| `npm run lint`          | ESLint with recommended React + TypeScript rules.           |
+| `npm run build`         | Production build (fails on TypeScript errors).              |
+| `npm run setup:appwrite`| Idempotent check of schema/indexes.                         |
+| `npm run seed:stickers` | Verifies Appwrite write permissions while seeding.          |
+
+Manual checks:
+- Attempt to claim the same sticker twice (expect “Already claimed”).
+- Provide wrong signature when `SIGNING_SECRET` is set (expect rejection).
+- Load `/me` and confirm personal claims only.
+- Verify `/scan` redirects to `/` when unauthenticated.
 
 ---
 
-Bring your experiences to life—if you have questions or ideas, open an issue or reach out. Let’s build unforgettable events together. 🎉
+## Troubleshooting
+
+| Symptom                               | Fix                                                                 |
+|---------------------------------------|---------------------------------------------------------------------|
+| Function returns 401 without signature | Ensure `SIGNING_SECRET` is shared between seeding tool and function.|
+| Frontend fails to call function        | Check `VITE_APPWRITE_CLAIM_FUNCTION_ID` and enable HTTP execution.  |
+| Scanner shows camera error             | Verify browser permissions; try the manual entry fallback.          |
+| Claims not visible on `/me`            | Confirm claim documents include owner read permission (`Role.user`).|
+| Setup script loops on attributes       | Wait for Appwrite attributes to reach `status = available`; rerun.  |
+
+---
+
+## Roadmap Ideas
+
+- Generate printable QR PDFs alongside the CSV.
+- Add leaderboard view backed by Appwrite aggregates.
+- Support OAuth (GitHub/Google) in addition to email/password.
+- Integrate analytics to track scans per zone or time block.
+
+---
+
+Built for the JAM Events sticker hunt — secure, fast, and hard to break. 🎉

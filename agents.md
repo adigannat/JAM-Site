@@ -1,182 +1,171 @@
-## Event Site – LLM Agent Guide
+# Sticker Hunt – LLM Agent Guide
 
-This guide is the source of truth for autonomous or human agents working in `event-site`. It captures the current architecture, Appwrite integrations, conventions, and the guardrails you should respect when shipping updates.
-
----
-
-### 1. Mission Snapshot
-- **Experience**: Multi-route marketing site for JAM Events that blends storytelling with actionable conversions (signups, newsletter, inquiries).
-- **Framework**: Next.js 15 App Router with React 19 (all TypeScript).
-- **Styling**: Tailwind CSS v4 + bespoke utilities (`src/styles/globals.css`), animated gradients, Framer Motion transitions.
-- **Appwrite Usage**:
-  - Lead capture (`signup` collection)
-  - Upcoming/past events (`events` collection + storage)
-  - Featured testimonials (`testimonials` collection + storage)
-  - Newsletter subscriptions (`newsletter` collection)
-  - Detailed inquiries (`inquiries` collection)
-- **Validation & Forms**: `react-hook-form` + `zod` in signup/newsletter; controlled form handling in contact flow.
-- **Tooling**: ESLint (`next/core-web-vitals`, `next/typescript`), Prettier (Tailwind plugin), strict TypeScript, `framer-motion`.
-
-Primary objective: deliver a premium event-planning funnel that can grow into a content-managed marketing site backed entirely by Appwrite data.
+This file is the operational source of truth for the JAM Event sticker hunt project. Reference it before making changes so every update stays aligned with our product and infrastructure goals.
 
 ---
 
-### 2. Repository Topology
+## 1. Mission Snapshot
+- **Experience:** Authenticated landing → QR scanner → sticker collection dashboard.
+- **Objective:** Make it simple—and hard to break—for event attendees to claim physical stickers bound to their Appwrite identity.
+- **Tone:** Premium, high-contrast event aesthetic with tight UX polish.
+
+---
+
+## 2. Tech & Tooling
+
+| Area        | Stack / Notes                                                      |
+|-------------|--------------------------------------------------------------------|
+| Framework   | React 18 + Vite (TypeScript)                                       |
+| Routing     | React Router v6                                                    |
+| Styling     | TailwindCSS with bespoke tokens (`app/src/styles.css`)             |
+| State       | Context for auth + toast notifications                             |
+| Data Layer  | Appwrite Web SDK (`app/src/lib/appwrite.ts`, `claim.ts`, `claims.ts`) |
+| QR Scanning | `@zxing/browser`                                                   |
+| Serverless  | Appwrite `claimSticker` function (Node 20, TypeScript)             |
+| Scripts     | `setup-appwrite.mjs`, `seed-stickers.mjs`                          |
+| Linting     | ESLint + Prettier                                                  |
+
+Keep dependencies lean. Any new library requires justification in PR/notes.
+
+---
+
+## 3. Repository Topology
+
 ```
 .
-├── src/
-│   ├── app/
-│   │   ├── layout.tsx              # Root layout, SEO metadata, sticky navigation
-│   │   ├── page.tsx                # Home experience (hero, highlights, events, testimonials…)
-│   │   ├── about/page.tsx          # Brand story, values, team, shared components
-│   │   ├── events/page.tsx         # Upcoming + past events, signup CTA
-│   │   ├── services/page.tsx       # Services catalogue, process, testimonials
-│   │   └── contact/page.tsx        # Inquiry form, office info, FAQs
-│   ├── components/
-│   │   ├── Navigation.tsx          # Scroll-aware nav & mobile menu
-│   │   ├── Hero.tsx / Highlights.tsx / Services.tsx
-│   │   ├── EventsGallery.tsx       # Fetches upcoming events from Appwrite
-│   │   ├── PastEvents.tsx          # Case-study style highlights
-│   │   ├── Testimonials.tsx        # Fetches featured testimonials + avatars
-│   │   ├── Partners.tsx            # Client/partner grid (ready for storage logos)
-│   │   ├── Team.tsx                # Team bios (extendable with storage avatars)
-│   │   ├── SignupForm.tsx          # Lead capture with duplicate prevention
-│   │   ├── Newsletter.tsx          # Newsletter opt-in (Appwrite-backed)
-│   │   ├── ContactForm.tsx         # Detailed inquiry submission
-│   │   └── Footer.tsx              # Global footer and contact links
-│   ├── lib/
-│   │   └── appwrite.ts             # Client setup, typed helpers, storage utilities
-│   └── styles/
-│       └── globals.css             # Tailwind import + shared utility classes
-├── docs/appwrite-setup.md          # Database, collection, and bucket checklist
-├── README.md                       # Public overview (kept in sync with this file)
-├── .env(.example)                  # Public Appwrite identifiers
-└── Tooling configs (package.json, tsconfig.json, eslint, prettier, postcss…)
+├── app/                 # Vite app root
+│   ├── index.html
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── auth/             # AuthForm etc.
+│   │   │   ├── layout/           # Header, footer
+│   │   │   ├── scan/             # Confetti + helpers
+│   │   │   └── ui/               # Button, Card, Toast
+│   │   ├── lib/                  # Appwrite client, env, claim helpers
+│   │   ├── pages/                # Landing, Scan, Profile, 404
+│   │   ├── routes/               # Router + protected gate + layout
+│   │   └── styles.css            # Tailwind directives + globals
+│   └── vite.config.ts
+├── functions/claimSticker/       # Appwrite function (TypeScript)
+├── scripts/                      # Appwrite provisioning + seeding
+├── docs/appwrite-comprehensive-setup.md
+├── .env / .env.example
+└── README.md
 ```
 
-Refer to component files when altering UX—they are intentionally modular to allow reuse across routes.
+Front-end imports assume alias `@` → `app/src`, plus scoped aliases (`@components`, `@lib`).
 
 ---
 
-### 3. Environment & Appwrite Requirements
-Populate `.env` (and `.env.example`) with the following **public** identifiers:
+## 4. Environment & Secrets
 
-- `NEXT_PUBLIC_APPWRITE_ENDPOINT`
-- `NEXT_PUBLIC_APPWRITE_PROJECT_ID`
-- `NEXT_PUBLIC_APPWRITE_PROJECT_NAME`
-- `NEXT_PUBLIC_APPWRITE_DATABASE_ID`
-- Collections:
-  - `NEXT_PUBLIC_APPWRITE_COLLECTION_ID` (signups)
-  - `NEXT_PUBLIC_APPWRITE_EVENTS_COLLECTION_ID`
-  - `NEXT_PUBLIC_APPWRITE_TESTIMONIALS_COLLECTION_ID`
-  - `NEXT_PUBLIC_APPWRITE_NEWSLETTER_COLLECTION_ID`
-  - `NEXT_PUBLIC_APPWRITE_INQUIRIES_COLLECTION_ID`
-- Storage buckets:
-  - `NEXT_PUBLIC_APPWRITE_EVENTS_BUCKET_ID`
-  - `NEXT_PUBLIC_APPWRITE_TEAM_BUCKET_ID`
-  - `NEXT_PUBLIC_APPWRITE_CLIENTS_BUCKET_ID`
+Populate `.env` and `.env.example` with:
 
-`docs/appwrite-setup.md` spells out attribute schemas, indexes (e.g., email uniqueness), and permission guidance. Client-side writes require `create` access for anonymous users; keep `read/update/delete` locked to trusted roles.
+| Variable                                   | Scope           | Notes                                               |
+|--------------------------------------------|-----------------|-----------------------------------------------------|
+| `VITE_APPWRITE_ENDPOINT`, `PROJECT_ID`     | Frontend        | Public safe, pulled via `import.meta.env`.          |
+| `VITE_APPWRITE_DATABASE_ID`                | Frontend        | Defaults to `event_db`.                             |
+| `VITE_APPWRITE_STICKERS_COLLECTION_ID`     | Frontend        | Defaults to `stickers`.                             |
+| `VITE_APPWRITE_CLAIMS_COLLECTION_ID`       | Frontend        | Defaults to `claims`.                               |
+| `VITE_APPWRITE_CLAIM_FUNCTION_ID`          | Frontend        | Set after function deployment.                      |
+| `APPWRITE_ENDPOINT`, `PROJECT_ID`, `API_KEY`| Scripts/Function| Server-side credentials (**keep secret**).          |
+| `SIGNING_SECRET` + `SIGNATURE_LENGTH`      | Shared          | Required when QR codes carry signatures.            |
+| `EVENT_ID`, `STICKER_PREFIX`               | Scripts         | Defaults for seeding utility.                       |
 
----
-
-### 4. Commands & Quality Gates
-- `npm install` – install dependencies.
-- `npm run dev` – dev server @ `http://localhost:3000`.
-- `npm run build` / `npm run start` – production pipeline.
-- `npm run lint` – Next.js ESLint bundle (must be clean).
-- `npx prettier --write .` – optional formatting sweep before commits.
-
-No automated tests exist yet. If you introduce non-trivial logic, add Jest/RTL or Playwright harnesses.
+If you add or rename env vars:
+1. Update `.env`, `.env.example`, and any documentation.
+2. Ensure validation exists (`app/src/lib/env.ts` or function env schema).
 
 ---
 
-### 5. Runtime Architecture
-1. **Global layout (`src/app/layout.tsx`)**
-   - Applies Inter + Poppins fonts, comprehensive metadata (Open Graph, Twitter, robots).
-   - Renders `Navigation` globally and offsets page content.
+## 5. Core Workflows
 
-2. **Navigation (`src/components/Navigation.tsx`)**
-   - Client component watching scroll to toggle background/shadow.
-   - Handles responsive menu state and quick CTA to `/contact`.
+### 5.1 Authentication
+- Context: `app/src/lib/auth.tsx` (AuthProvider).
+- Uses Appwrite account SDK with email/password sessions.
+- `ready` flag gates protected routes.
+- On success, `LandingPage` redirects authenticated users to `/scan`.
 
-3. **Home (`src/app/page.tsx`)**
-   - Orchestrates marquee sections in order: `Hero`, `Highlights`, `EventsGallery`, `Testimonials`, `Partners`, `Newsletter`, `Footer`.
-   - Animated gradient backdrop reused via absolute layers.
+### 5.2 QR Claim Flow
+1. `/scan` renders live video via `BrowserMultiFormatReader`.
+2. On decode → `claimSticker` client helper posts to Appwrite Function.
+3. Function validates signature (if enabled), ensures sticker active, writes claim doc with owner read permission, deactivates sticker.
+4. Front-end shows confetti on success and stores latest claim for `/me`.
 
-4. **Events route**
-   - Fetches live upcoming events (`fetchEvents("upcoming")`) and surfaces static past case studies.
-   - Reuses `SignupForm` to keep conversions close to content.
+Manual code entry reuses the same claim path (wraps input as `https://manual-entry...` query string).
 
-5. **Services route**
-   - Uses `Services` component (pricing tiers/process), NPS stats, and CTA blocks.
-   - Drops in testimonials & partners to reinforce credibility.
-
-6. **About route**
-   - Story-driven hero, values grid, team bios (`Team` component ready for Appwrite avatars), plus shared social proof sections.
-
-7. **Contact route**
-   - `ContactForm` posts to `submitInquiry` with rich payload (event type, budget, guest count, message). Surfaces error states for misconfiguration.
-   - Additional cards highlight response time, locations, and direct-contact options.
-
-8. **Data layer (`src/lib/appwrite.ts`)**
-   - Configures `Client`, `Databases`, `Storage`, exports typed `SignupPayload`, `Event`, `Testimonial`, `NewsletterSubscription`, `Inquiry`.
-   - Helpers:
-     - `submitSignup`, `subscribeNewsletter`, `submitInquiry` (all guard against duplicates and missing config).
-     - `fetchEvents`, `fetchTestimonials` with optional filters.
-     - Storage utilities `getImageUrl`, `getEventImages`.
-   - Throws `AppwriteEnvironmentError` when env is incomplete, aiding debugging.
+### 5.3 Profile
+- `/me` fetches `claims` for the current user via `fetchUserClaims`.
+- Expects duplicate data from function (sticker metadata snapshot). Any schema change must update function + types.
 
 ---
 
-### 6. Styling & UX Principles
-- Tailwind utilities keep styles consistent; `globals.css` holds gradient helpers, focus rings, and base text styling.
-- Soft-motion palette using Tailwind animations and Framer Motion (`PageTransition.tsx`) for future transitions.
-- Components ship with loading skeletons (events/testimonials) to cover async fetch states.
-- Forms respect accessibility: labeled inputs, focus-visible outlines, inline validation, descriptive messaging.
+## 6. Appwrite Function – `claimSticker`
+
+- Source: `functions/claimSticker/src/index.ts`.
+- Environment schema enforced via Zod.
+- Requires Appwrite JWT header to resolve user context.
+- Returns unified response shape consumed by `app/src/lib/claim.ts`.
+- Duplicate/invalid claims surface as `status` codes for toasts:
+  - `404` → invalid/inactive.
+  - `409` → already claimed.
+  - `401` → auth/signature issues.
+
+When editing:
+- Update README + docs.
+- Keep response shape backward compatible or reflect changes in front-end helper.
+- Maintain unique indexes in schema script.
 
 ---
 
-### 7. Agent Workflow Checklist
-1. **Recon first** – skim the relevant page/component plus `lib/appwrite.ts` before implementing changes.
-2. **Schema alignment** – any change to form fields or data flows must update:
-   - Component schema/validators/defaults
-   - `SignupPayload`/related types in `lib/appwrite.ts`
-   - Appwrite collection attributes
-   - `.env.example` and `docs/appwrite-setup.md`
-3. **Environment hygiene** – only add `NEXT_PUBLIC_` variables for values safe to expose; push secrets to server actions/functions if required later.
-4. **Quality gate** – run `npm run lint`; add tests when logic grows.
-5. **Formatting** – let Prettier manage Tailwind class order. Avoid manual re-sorting.
-6. **Documentation** – update this guide and README when architecture, env vars, or workflows evolve.
+## 7. Commands & Quality Gates
+
+| Command                     | Purpose                                               |
+|-----------------------------|-------------------------------------------------------|
+| `npm run dev`               | Start Vite dev server.                                |
+| `npm run build`             | Production build (ensures TS correctness).           |
+| `npm run lint`              | ESLint (fail on warnings).                            |
+| `npm run setup:appwrite`    | Provision/validate database + collections.           |
+| `npm run seed:stickers -- N`| Generate N stickers + CSV (requires env + API key).   |
+| `npm run functions:build`   | Compile serverless function for deployment.          |
+
+Before handing work off, run lint + build at minimum.
 
 ---
 
-### 8. Extension Opportunities
-- Bind partner/team sections to Appwrite storage for real imagery.
-- Build admin dashboards or API routes to manage events/testimonials/inquiries.
-- Integrate analytics and conversion tracking.
-- Introduce automated testing and CI workflows.
-- Extract a design-system layer (buttons, cards, badges) as the UI catalog expands.
+## 8. Schema Alignment Checklist
+
+When modifying data models:
+1. Update Appwrite provisioning script and rerun (or document manual console steps).
+2. Adjust TypeScript types in:
+   - `app/src/lib/appwrite.ts`
+   - `app/src/lib/claim.ts`
+   - `app/src/lib/claims.ts`
+   - `functions/claimSticker/src/index.ts`
+3. Refresh `.env.example`, README, and `docs/appwrite-comprehensive-setup.md`.
+4. If new fields should appear on `/me`, adapt UI and claim snapshots.
 
 ---
 
-### 9. Known Follow-Ups
-- Upload real assets to storage buckets and wire into Partners/Team components.
-- Add tests to protect complex flows (newsletter + inquiry submissions).
-- Populate `next.config.mjs` if remote images/domains become necessary.
-- Review `docs/appwrite-setup.md` alongside any schema or env updates.
+## 9. UX & Accessibility Guardrails
+
+- Maintain high-contrast, event-driven styling (dark background, neon accents).
+- Input components already include labels + error states; reuse them.
+- Keep the scanner accessible (display state messages, provide manual fallback).
+- Avoid adding large runtime dependencies; prefer hand-rolled transitions.
+- Toasts are lightweight—use them for all user feedback instead of `alert`.
 
 ---
 
-### 10. Quick Reference
-- Home composition: `src/app/page.tsx`
-- Navigation: `src/components/Navigation.tsx`
-- Signup form: `src/components/SignupForm.tsx`
-- Newsletter: `src/components/Newsletter.tsx`
-- Contact form: `src/components/ContactForm.tsx`
-- Appwrite helpers & types: `src/lib/appwrite.ts`
-- Env template: `.env.example`
-- Documentation: `README.md`, `docs/appwrite-setup.md`
-- Commands: `npm run dev`, `npm run lint`, `npm run build`
+## 10. Future Enhancements (If You Tackle Them)
 
-Keep this doc current—future agents rely on it to understand the system quickly and deliver high-quality updates without regressions.
+1. Leaderboard/analytics via Appwrite queries or edge functions.
+2. Printable QR PDFs (hook into `seed-stickers` output).
+3. OAuth providers for faster login.
+4. Automated end-to-end tests (Playwright) exercising scan + claim flow.
+
+Document any completed item here so future agents know what changed.
+
+---
+
+Keep this guide synchronized with the codebase. Outdated docs are more dangerous than missing docs.

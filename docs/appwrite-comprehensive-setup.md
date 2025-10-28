@@ -1,408 +1,205 @@
-# Comprehensive Appwrite Setup for JAM Events Website
+# Appwrite Setup – Sticker Hunt Platform
 
-This guide covers the complete Appwrite backend configuration for the JAM Events website, including all databases, collections, storage buckets, and recommended automations.
-
----
-
-## Table of Contents
-
-1. [Project Setup](#project-setup)
-2. [Database & Collections](#database--collections)
-3. [Storage Buckets](#storage-buckets)
-4. [Indexes](#indexes)
-5. [Permissions](#permissions)
-6. [Appwrite Functions (Optional)](#appwrite-functions-optional)
-7. [Environment Variables](#environment-variables)
-8. [Testing](#testing)
+This document is the authoritative reference for provisioning the Appwrite resources that power the JAM Event sticker hunt. It mirrors the defaults used by the project’s scripts and serverless function. Keep it in sync whenever schemas or permissions change.
 
 ---
 
-## 1. Project Setup
+## 1. Project & API Credentials
 
-### Create Appwrite Project
+Create (or reuse) an Appwrite project and note:
 
-1. Log into your Appwrite Console
-2. Create a new project or use existing project
-3. Copy your Project ID and Endpoint to your `.env` file
+- **Project ID**
+- **API endpoint**
+- **API key** with `databases.read`, `databases.write`, and `functions.all` scopes.
 
-**Environment Variables:**
-```bash
-NEXT_PUBLIC_APPWRITE_ENDPOINT=https://fra.cloud.appwrite.io/v1
-NEXT_PUBLIC_APPWRITE_PROJECT_ID=your_project_id
-NEXT_PUBLIC_APPWRITE_PROJECT_NAME=Event Site
-```
-
----
-
-## 2. Database & Collections
-
-### Create Database
-
-1. Navigate to **Databases** in Appwrite Console
-2. Click **Create Database**
-3. Database ID: `jam_events`
-4. Database Name: `JAM Events Database`
-
-### Collection 1: Signups (`jam_signups`)
-
-**Purpose:** Store community signup form submissions
-
-**Attributes:**
-
-| Attribute          | Type     | Size    | Required | Default | Array |
-|--------------------|----------|---------|----------|---------|-------|
-| `fullName`         | string   | 80      | Yes      | -       | No    |
-| `email`            | email    | 191     | Yes      | -       | No    |
-| `phone`            | string   | 32      | No       | ""      | No    |
-| `eventInterests`   | string   | 50      | Yes      | -       | Yes   |
-| `notes`            | string   | 400     | No       | ""      | No    |
-| `marketingConsent` | boolean  | -       | Yes      | false   | No    |
-| `createdAt`        | datetime | -       | Yes      | now()   | No    |
-
-**Indexes:**
-- `email_idx` - Attribute: `email`, Order: ASC (for duplicate detection)
-
----
-
-### Collection 2: Events (`events`)
-
-**Purpose:** Store upcoming and past events
-
-**Attributes:**
-
-| Attribute       | Type     | Size    | Required | Default | Array |
-|-----------------|----------|---------|----------|---------|-------|
-| `title`         | string   | 150     | Yes      | -       | No    |
-| `description`   | string   | 1000    | Yes      | -       | No    |
-| `date`          | datetime | -       | Yes      | -       | No    |
-| `location`      | string   | 200     | Yes      | -       | No    |
-| `eventType`     | string   | 100     | Yes      | -       | No    |
-| `status`        | string   | 20      | Yes      | -       | No    |
-| `imageIds`      | string   | 100     | No       | -       | Yes   |
-| `attendees`     | integer  | -       | No       | 0       | No    |
-| `maxAttendees`  | integer  | -       | No       | -       | No    |
-| `price`         | float    | -       | No       | 0       | No    |
-| `highlights`    | string   | 100     | No       | -       | Yes   |
-| `createdAt`     | datetime | -       | Yes      | now()   | No    |
-| `updatedAt`     | datetime | -       | Yes      | now()   | No    |
-
-**Valid Status Values:** `upcoming`, `ongoing`, `past`
-
-**Indexes:**
-- `date_idx` - Attribute: `date`, Order: DESC
-- `status_idx` - Attribute: `status`, Order: ASC
-
----
-
-### Collection 3: Testimonials (`testimonials`)
-
-**Purpose:** Client testimonials and reviews
-
-**Attributes:**
-
-| Attribute      | Type     | Size    | Required | Default | Array |
-|----------------|----------|---------|----------|---------|-------|
-| `clientName`   | string   | 100     | Yes      | -       | No    |
-| `clientRole`   | string   | 100     | No       | ""      | No    |
-| `companyName`  | string   | 150     | No       | ""      | No    |
-| `rating`       | integer  | -       | Yes      | 5       | No    |
-| `testimonial`  | string   | 800     | Yes      | -       | No    |
-| `eventType`    | string   | 100     | No       | ""      | No    |
-| `imageId`      | string   | 100     | No       | ""      | No    |
-| `featured`     | boolean  | -       | Yes      | false   | No    |
-| `createdAt`    | datetime | -       | Yes      | now()   | No    |
-
-**Indexes:**
-- `featured_idx` - Attribute: `featured`, Order: DESC
-- `created_idx` - Attribute: `createdAt`, Order: DESC
-
----
-
-### Collection 4: Newsletter (`newsletter`)
-
-**Purpose:** Newsletter subscription list
-
-**Attributes:**
-
-| Attribute          | Type     | Size    | Required | Default | Array |
-|--------------------|----------|---------|----------|---------|-------|
-| `email`            | email    | 191     | Yes      | -       | No    |
-| `name`             | string   | 100     | No       | ""      | No    |
-| `subscriptionDate` | datetime | -       | Yes      | now()   | No    |
-| `isActive`         | boolean  | -       | Yes      | true    | No    |
-
-**Indexes:**
-- `email_idx` - Attribute: `email`, Order: ASC (unique constraint)
-
----
-
-### Collection 5: Inquiries (`inquiries`)
-
-**Purpose:** Contact form submissions and event inquiries
-
-**Attributes:**
-
-| Attribute    | Type     | Size    | Required | Default | Array |
-|--------------|----------|---------|----------|---------|-------|
-| `name`       | string   | 100     | Yes      | -       | No    |
-| `email`      | email    | 191     | Yes      | -       | No    |
-| `phone`      | string   | 32      | No       | ""      | No    |
-| `eventType`  | string   | 100     | Yes      | -       | No    |
-| `eventDate`  | string   | 50      | No       | ""      | No    |
-| `guestCount` | integer  | -       | No       | 0       | No    |
-| `budget`     | string   | 50      | No       | ""      | No    |
-| `message`    | string   | 2000    | Yes      | -       | No    |
-| `status`     | string   | 20      | Yes      | "new"   | No    |
-| `createdAt`  | datetime | -       | Yes      | now()   | No    |
-
-**Valid Status Values:** `new`, `contacted`, `converted`, `closed`
-
-**Indexes:**
-- `status_idx` - Attribute: `status`, Order: ASC
-- `created_idx` - Attribute: `createdAt`, Order: DESC
-
----
-
-## 3. Storage Buckets
-
-### Bucket 1: Events Gallery (`events_gallery`)
-
-**Purpose:** Store event photos and media
-
-**Settings:**
-- Maximum File Size: 10MB
-- Allowed File Extensions: `jpg`, `jpeg`, `png`, `webp`, `gif`
-- Compression: Enabled
-- Encryption: Enabled
-- Antivirus: Enabled
-
-**Permissions:**
-- Read: `Any` (public viewing)
-- Create: `Role: team` (admin uploads only)
-- Update: `Role: team`
-- Delete: `Role: team`
-
----
-
-### Bucket 2: Team Photos (`team_photos`)
-
-**Purpose:** Team member headshots and photos
-
-**Settings:**
-- Maximum File Size: 5MB
-- Allowed File Extensions: `jpg`, `jpeg`, `png`, `webp`
-- Compression: Enabled
-- Encryption: Enabled
-
-**Permissions:**
-- Read: `Any`
-- Create/Update/Delete: `Role: team`
-
----
-
-### Bucket 3: Client Logos (`client_logos`)
-
-**Purpose:** Partner and client company logos
-
-**Settings:**
-- Maximum File Size: 2MB
-- Allowed File Extensions: `jpg`, `jpeg`, `png`, `webp`, `svg`
-- Compression: Enabled
-
-**Permissions:**
-- Read: `Any`
-- Create/Update/Delete: `Role: team`
-
----
-
-## 4. Indexes
-
-All indexes are listed above with each collection. Key indexes for performance:
-
-### Critical Indexes
-1. **Signups** - `email` (duplicate prevention)
-2. **Events** - `date`, `status` (filtering and sorting)
-3. **Testimonials** - `featured`, `createdAt` (featured testimonials)
-4. **Newsletter** - `email` (duplicate prevention)
-5. **Inquiries** - `status`, `createdAt` (inquiry management)
-
----
-
-## 5. Permissions
-
-### Public Collections (Read-Only)
-- **Events**: Any user can read, only team can create/update/delete
-- **Testimonials**: Any user can read, only team can manage
-- **Team Photos**: Public read access
-
-### User-Generated Collections (Create-Only)
-- **Signups**: Any user can create (unauthenticated), only team can read
-- **Newsletter**: Any user can create, only team can read/manage
-- **Inquiries**: Any user can create, only team can read/manage
-
-### Recommended Permission Settings
-
-**For Public Read Collections (Events, Testimonials):**
-```
-Read: Any
-Create: Role:team
-Update: Role:team
-Delete: Role:team
-```
-
-**For User Submission Collections (Signups, Newsletter, Inquiries):**
-```
-Create: Any
-Read: Role:team
-Update: Role:team
-Delete: Role:team
-```
-
-**Note:** Create a team role for admin users to manage content.
-
----
-
-## 6. Appwrite Functions (Optional)
-
-### Function 1: Email Notification on Signup
-
-**Trigger:** `databases.jam_events.collections.jam_signups.documents.*.create`
-
-**Purpose:** Send email notification to team when new signup occurs
-
-**Example Node.js Function:**
-```javascript
-import { Client, Databases } from 'node-appwrite';
-
-export default async ({ req, res, log, error }) => {
-  const client = new Client()
-    .setEndpoint(process.env.APPWRITE_ENDPOINT)
-    .setProject(process.env.APPWRITE_PROJECT_ID)
-    .setKey(process.env.APPWRITE_API_KEY);
-
-  // Send email notification using your email service
-  // (SendGrid, Mailgun, AWS SES, etc.)
-
-  return res.json({ success: true });
-};
-```
-
----
-
-### Function 2: Newsletter Welcome Email
-
-**Trigger:** `databases.jam_events.collections.newsletter.documents.*.create`
-
-**Purpose:** Send welcome email to new newsletter subscribers
-
----
-
-### Function 3: Inquiry Auto-Response
-
-**Trigger:** `databases.jam_events.collections.inquiries.documents.*.create`
-
-**Purpose:** Send automatic confirmation email to inquiry submitters
-
----
-
-### Function 4: Image Optimization
-
-**Trigger:** Manual or scheduled
-
-**Purpose:** Automatically optimize and resize uploaded images
-
----
-
-## 7. Environment Variables
-
-Copy this to your `.env` and `.env.example`:
+Populate the following environment variables (used by scripts and the serverless function):
 
 ```bash
-# Appwrite Configuration
-NEXT_PUBLIC_APPWRITE_PROJECT_ID=68f8c91600302ad3cdd2
-NEXT_PUBLIC_APPWRITE_PROJECT_NAME=Event Site
-NEXT_PUBLIC_APPWRITE_ENDPOINT=https://fra.cloud.appwrite.io/v1
-NEXT_PUBLIC_APPWRITE_DATABASE_ID=jam_events
-
-# Collections
-NEXT_PUBLIC_APPWRITE_COLLECTION_ID=jam_signups
-NEXT_PUBLIC_APPWRITE_EVENTS_COLLECTION_ID=events
-NEXT_PUBLIC_APPWRITE_TESTIMONIALS_COLLECTION_ID=testimonials
-NEXT_PUBLIC_APPWRITE_NEWSLETTER_COLLECTION_ID=newsletter
-NEXT_PUBLIC_APPWRITE_INQUIRIES_COLLECTION_ID=inquiries
-
-# Storage Buckets
-NEXT_PUBLIC_APPWRITE_EVENTS_BUCKET_ID=events_gallery
-NEXT_PUBLIC_APPWRITE_TEAM_BUCKET_ID=team_photos
-NEXT_PUBLIC_APPWRITE_CLIENTS_BUCKET_ID=client_logos
+APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
+APPWRITE_PROJECT_ID=your-project-id
+APPWRITE_API_KEY=api-key-with-db-and-function-access
+DB_ID=event_db
+STICKERS_COLL_ID=stickers
+CLAIMS_COLL_ID=claims
+SIGNING_SECRET=optional-shared-secret
+SIGNATURE_LENGTH=16
+EVENT_ID=JAM-2025
+STICKER_PREFIX=JAM
 ```
 
----
-
-## 8. Testing
-
-### Test Checklist
-
-#### Database Tests
-- [ ] Create a test signup and verify it appears in `jam_signups`
-- [ ] Try duplicate email signup and verify error handling
-- [ ] Create test events with different statuses
-- [ ] Add testimonials with featured flag
-- [ ] Subscribe to newsletter with duplicate email test
-
-#### Storage Tests
-- [ ] Upload test images to each bucket
-- [ ] Verify public access to images via URL
-- [ ] Test file size and type restrictions
-- [ ] Verify compression is working
-
-#### Function Tests (if implemented)
-- [ ] Verify email notifications are sent
-- [ ] Check auto-response emails
-- [ ] Test image optimization
-
-#### Permission Tests
-- [ ] Verify unauthenticated users can submit forms
-- [ ] Ensure unauthenticated users cannot read sensitive data
-- [ ] Test team role can manage all content
+Front-end variables (prefixed with `VITE_`) mirror the IDs above and add the claim function ID.
 
 ---
 
-## 9. Production Checklist
+## 2. Database Topology
 
-Before going live:
+### Database: `event_db`
 
-1. **Security**
-   - [ ] Review all permission settings
-   - [ ] Enable rate limiting on collections
-   - [ ] Set up API key rotation policy
-   - [ ] Enable Appwrite security headers
+Holds two collections: `stickers` and `claims`.
 
-2. **Performance**
-   - [ ] Verify all indexes are created
-   - [ ] Enable CDN for storage buckets
-   - [ ] Set up caching policies
-   - [ ] Monitor database query performance
+#### Collection: `stickers`
 
-3. **Backup**
-   - [ ] Set up automated database backups
-   - [ ] Configure storage bucket backup policy
-   - [ ] Document recovery procedures
+| Attribute | Type    | Size | Required | Notes                          |
+|-----------|---------|------|----------|--------------------------------|
+| `code`    | string  | 64   | ✓        | Unique string printed in QR.   |
+| `eventId` | string  | 64   | ✓        | Event identifier.              |
+| `active`  | boolean | —    | ✓        | Defaults to `true`.            |
+| `name`    | string  | 128  | —        | Sticker title (optional).      |
+| `imageUrl`| string  | 256  | —        | Optional artwork URL.          |
+| `rarity`  | string  | 32   | —        | e.g. `Common`, `Mythic`.       |
+| `designId`| string  | 64   | —        | Grouping for shared artwork.   |
 
-4. **Monitoring**
-   - [ ] Set up Appwrite monitoring
-   - [ ] Configure alerts for errors
-   - [ ] Track usage metrics
-   - [ ] Monitor storage limits
+**Indexes**
+- `unique_code` → unique on `code`
+
+**Permissions**
+- No client read/write permissions. Managed exclusively via API key/serverless function.
+
+#### Collection: `claims`
+
+Document-level permissions enabled.
+
+| Attribute          | Type     | Size | Required | Notes                                     |
+|--------------------|----------|------|----------|-------------------------------------------|
+| `userId`           | string   | 64   | ✓        | Authenticated Appwrite user ID.           |
+| `stickerId`        | string   | 64   | ✓        | Reference to `stickers.$id`.              |
+| `eventId`          | string   | 64   | ✓        | Copied from sticker on claim.             |
+| `code`             | string   | 64   | ✓        | Sticker code (duplicated for convenience).|
+| `stickerName`      | string   | 128  | —        | Snapshot of sticker name.                 |
+| `stickerImageUrl`  | string   | 256  | —        | Snapshot of sticker artwork URL.          |
+| `stickerRarity`    | string   | 32   | —        | Snapshot of rarity.                       |
+| `claimedAt`        | datetime | —    | ✓        | ISO timestamp of claim.                   |
+
+**Indexes**
+- `unique_sticker` → unique on `stickerId`
+- `unique_user_sticker` → unique on `userId, stickerId`
+- `user_lookup` → key index on `userId` (ascending)
+
+**Permissions**
+- No collection-level permissions.
+- Each document is created with `read(Role.user(userId))`, so the claimant can read their own record.
 
 ---
 
-## Support & Resources
+## 3. Infrastructure as Code Helpers
 
-- [Appwrite Documentation](https://appwrite.io/docs)
-- [Appwrite Discord Community](https://appwrite.io/discord)
-- Project Maintainer: JAM Events Development Team
+### Automated provisioning script
+
+`npm run setup:appwrite` executes `scripts/setup-appwrite.mjs` and will:
+
+1. Ensure database `event_db` exists.
+2. Ensure `stickers` and `claims` collections exist with the attributes and indexes above.
+3. Wait for attributes to become available before creating indexes.
+
+The script is idempotent; re-running it will skip existing resources.
+
+> Run from project root with the same environment variables used by the serverless function.
+
+### Seeding stickers
+
+`npm run seed:stickers -- 50` (count optional, defaults to 20) creates the specified number of stickers in Appwrite and writes a CSV (`scripts/output/stickers.csv`) containing:
+
+- Sticker code
+- Optional signature (if `SIGNING_SECRET` is set)
+- Event ID
+
+Use the CSV to generate QR codes. Each row maps one physical sticker to a single-use code.
+
+Signature generation mirrors the claim function: `HMAC_SHA256(code, SIGNING_SECRET)` truncated to `SIGNATURE_LENGTH` characters (default 16).
 
 ---
 
-**Last Updated:** October 2025
+## 4. Serverless Function: `claimSticker`
+
+Source: `functions/claimSticker/src/index.ts`
+
+### Environment contract
+
+| Variable              | Purpose                                               |
+|-----------------------|-------------------------------------------------------|
+| `APPWRITE_ENDPOINT`   | API endpoint.                                        |
+| `APPWRITE_PROJECT_ID` | Project identifier.                                   |
+| `APPWRITE_API_KEY`    | API key with DB + function permissions.               |
+| `DB_ID`               | Database ID (`event_db`).                             |
+| `STICKERS_COLL_ID`    | Stickers collection ID.                               |
+| `CLAIMS_COLL_ID`      | Claims collection ID.                                 |
+| `SIGNING_SECRET`      | Optional. If present, signatures become mandatory.    |
+
+### Request payload
+
+```json
+{ "code": "JAM-AB12CD", "sig": "optional" }
+```
+
+If `SIGNING_SECRET` is configured, the function expects a signature truncated to the same length provided by the client (default 16 hex chars). Absence or mismatch → `401`.
+
+### Execution flow
+
+1. Validate environment, payload, and user session (`x-appwrite-user-jwt` header).
+2. Lookup sticker by `code` and `active = true`. Missing or inactive → `404`.
+3. Create claim document with owner read permissions.
+4. Update sticker `active = false` (best effort).
+5. Return claim snapshot to the client.
+
+Duplicate scans are handled by unique indexes; Appwrite returns `409`, which the function maps to `409 Already claimed`.
+
+### Deploying
+
+```
+cd functions/claimSticker
+npm install
+npm run build
+# appwrite functions createDeployment ... (documented in README)
+```
+
+Configure the function to accept HTTP requests and assign `execute` permissions to authenticated users.
+
+---
+
+## 5. QR Format & Signature Rules
+
+QR stickers should encode:
+
+```
+https://<your-domain>/scan?code=<CODE>[&sig=<SIGNATURE>]
+```
+
+The front-end accepts raw codes, full URLs, or manual input.
+
+Signature generation (if enabled):
+
+```
+signature = HMAC_SHA256(code, SIGNING_SECRET).slice(0, SIGNATURE_LENGTH)
+```
+
+Use the same logic in any external tooling (the seeding script already does).
+
+---
+
+## 6. Testing Checklist
+
+| Area                    | Tests                                                                                   |
+|-------------------------|-----------------------------------------------------------------------------------------|
+| Authentication          | Attempt to call the function without auth → `401`.                                      |
+| Sticker validity        | Scan an inactive or unknown code → `404`.                                               |
+| Happy path              | Scan fresh sticker → `200` and verify claim appears in `/me`.                           |
+| Duplicate scan          | Scan the same sticker twice → second attempt returns `409` and sticker remains inactive.|
+| Manual entry            | Enter code + signature manually → same result as QR scan.                               |
+| Signature enforcement   | Provide incorrect signature when `SIGNING_SECRET` set → `401`.                          |
+| Appwrite constraints    | Ensure indexes exist (`databases.listIndexes`) and attributes show `status = available`.|
+
+---
+
+## 7. Maintenance Tasks
+
+- Rotate API keys regularly and update `.env`.
+- Re-run `npm run setup:appwrite` after schema changes to keep environments in sync.
+- When adding new sticker metadata fields, update:
+  - Collection attributes (script + Appwrite console)
+  - Function payload snapshot
+  - Front-end claim types
+- Keep this document and the README in sync with any schema or flow changes.
+
+---
+
+**Last updated:** October 2025 (Sticker hunt relaunch)
